@@ -1,3 +1,18 @@
 __pycache__
 *.so
+*.pyd
 submodules/*/build
+submodules/simple-knn/simple_knn.egg-info/
+submodules/diff-gaussian-rasterization/diff_gaussian_rasterization/
+submodules/simple-nn/simple_nn/
+
+# training data and outputs (kept alongside repo, not in git)
+Training_Data*/
+Test_Model*/
+Tank_Test_Model*/
+Brain2_PNG/
+Rendering_Related_Files/
+m60/
+ship/
+spec-file.txt
+dummy.txt

@@ -22,6 +22,11 @@ from gaussian_me.args import ModelParams, PipelineParams, OptimizationParams
 
 from torch.utils.tensorboard import SummaryWriter
 
+# Add this just after your import statements
+def collate_identity(batch):
+    return batch
+
+
 
 def training(
     model_params: ModelParams,
@@ -58,10 +63,11 @@ def training(
             batch_size=1,
             shuffle=True,
             num_workers=8,
-            collate_fn=lambda x: x,
+            collate_fn=collate_identity,  # ✅ FIXED!
             pin_memory=True,
         )
     )
+
 
     scales = [1]
     current_scale = scales.pop(0)

@@ -133,15 +133,26 @@ def readColmapCameras(
     return cam_infos
 
 
-def fetchPly(path):
-    plydata = PlyData.read(path)
-    vertices = plydata["vertex"]
-    positions = np.vstack([vertices["x"], vertices["y"], vertices["z"]]).T
-    colors = np.vstack([vertices["red"], vertices["green"], vertices["blue"]]).T / 255.0
-    normals = np.vstack([vertices["nx"], vertices["ny"], vertices["nz"]]).T
-    return BasicPointCloud(
-        points=positions, colors=colors, opacities=np.ones_like(normals[:, :1])
-    )  # , normals=normals)
+def fetchPly(ply_path):
+    from plyfile import PlyData
+    plydata = PlyData.read(ply_path)
+    vertices = plydata["vertex"].data
+
+    # XYZ points
+    points = np.vstack([vertices["x"], vertices["y"], vertices["z"]]).T
+
+    # RGB colors (0–1)
+    colors = (
+        np.vstack([vertices["red"], vertices["green"], vertices["blue"]]).T
+        / 255.0
+    )
+
+    # Dummy opacity = 1.0 for every point
+    opacities = np.ones((points.shape[0],), dtype=np.float32)
+
+    # Return exactly (points, colors, opacities)
+    return BasicPointCloud(points=points, colors=colors, opacities=opacities)
+
 
 
 def storePly(path, xyz, rgb):
@@ -358,15 +369,18 @@ def readCamerasFromTransformsVolume(path, transformsfile,images):
     return cam_infos
 
 
-def readNerfSyntheticInfo(path, white_background, eval, extension=".png"):
+def readNerfSyntheticInfo(path, white_background = False, eval = False, extension=".png"):
     print("Reading Training Transforms")
-    train_cam_infos = readCamerasFromTransforms(
-        path, "transforms_train.json", white_background, extension
-    )
+    # force it into a list if it accidentally came back as a tuple
+    train_cam_infos, _ = readCamerasFromTransforms(path, "transforms_train.json", white_background, extension)
+    if isinstance(train_cam_infos, tuple):
+        train_cam_infos = list(train_cam_infos)
     print("Reading Test Transforms")
-    test_cam_infos = readCamerasFromTransforms(
-        path, "transforms_test.json", white_background, extension
-    )
+
+
+    test_cam_infos, _  = readCamerasFromTransforms(path, "transforms_test.json",  white_background, extension)
+    if isinstance(test_cam_infos, tuple):
+        test_cam_infos = list(test_cam_infos)
 
     if not eval:
         train_cam_infos.extend(test_cam_infos)
@@ -384,7 +398,7 @@ def readNerfSyntheticInfo(path, white_background, eval, extension=".png"):
         xyz = np.random.random((num_pts, 3)) * 2.6 - 1.3
         shs = np.random.random((num_pts, 3)) / 255.0
         pcd = BasicPointCloud(
-            points=xyz, colors=SH2RGB(shs), normals=np.zeros((num_pts, 3))
+            points=xyz, colors=SH2RGB(shs)
         )
 
         storePly(ply_path, xyz, SH2RGB(shs) * 255)
